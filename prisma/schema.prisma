@@ -1,0 +1,521 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  user
+  admin
+  superadmin
+}
+
+enum NameCard {
+  BCA
+  BRI
+  MANDIRI
+  BSI
+  DANA
+  OVO
+  GOPAY
+  SHOPEEPAY
+}
+
+model CreditCard {
+  id         String     @id @default(cuid())
+  nameCard   NameCard[]
+  numberCard String
+  userId     String?
+  order      Int        @default(0)
+  isActive   Boolean    @default(false)
+  createdAt  DateTime   @default(now())
+
+  User User? @relation(fields: [userId], references: [id])
+}
+
+model User {
+  id             String           @id @default(cuid())
+  name           String
+  email          String
+  emailVerified  Boolean
+  image          String?
+  roleInstructor String?
+  createdAt      DateTime
+  updatedAt      DateTime
+  sessions       Session[]
+  accounts       Account[]
+  courses        Course[]
+  enrollment     Enrollment[]
+  lessonProgress LessonProgress[]
+  creditCard     CreditCard[]
+
+  stripeCustomerId String? @unique
+
+  role        Role          @default(user)
+  banned      Boolean?      @default(false)
+  banReason   String?
+  banExpires  DateTime?
+  Certificate Certificate[]
+
+  bio        String?
+  website    String?
+  phone      String?
+  birthDate  DateTime?
+  Payment    Payment[]
+  Revenue    Revenue[]
+  Discussion Discussion[]
+  Reply      Reply[]
+  Wallet     Wallet?
+  ratings    Rating[]
+
+  // Referral & Points System
+  referralCode      String?            @unique
+  points            Int                @default(0)
+  referredBy        User?              @relation("UserReferral", fields: [referredById], references: [id])
+  referredById      String?
+  referrals         User[]             @relation("UserReferral")
+  pointTransactions PointTransaction[]
+  courseReviews     CourseReview[]
+  withdraws         Withdraw[]
+
+  // Quiz & Badges
+  quizAttempts      QuizAttempt[]
+  userBadges        UserBadge[]
+  learningStreak    LearningStreak?
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime
+  updatedAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  impersonatedBy String?
+
+  @@unique([token])
+  @@map("session")
+}
+
+model Payment {
+  id         String        @id @default(cuid())
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  course     Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId   String
+  amount     Int
+  status     PaymentStatus @default(PENDING)
+  provider   String?
+  externalId String?       @unique
+  invoiceUrl String?
+  paidAt     DateTime?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  revenue Revenue?
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+}
+
+model Revenue {
+  id           String   @id @default(cuid())
+  payment      Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  paymentId    String   @unique
+  instructor   User     @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  instructorId String
+  amount       Int
+  platformFee  Int
+  totalAmount  Int
+  createdAt    DateTime @default(now())
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime
+  updatedAt             DateTime
+
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime?
+  updatedAt  DateTime?
+
+  @@map("verification")
+}
+
+model Course {
+  id               String      @id @default(uuid())
+  title            String
+  description      String
+  fileKey          String
+  price            Int
+  duration         Int
+  level            CourseLevel @default(Beginner)
+  stripePriceId    String      @unique
+  category         String
+  smallDescription String
+  slug             String      @unique
+
+  status CourseStatus @default(Draft)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  chapter       Chapter[]
+  enrollment    Enrollment[]
+  Certificate   Certificate[]
+  Payment       Payment[]
+  ratings       Rating[]
+  courseReviews CourseReview[]
+}
+
+enum CourseLevel {
+  Beginner
+  Intermediate
+  Advanced
+}
+
+enum CourseStatus {
+  Draft
+  Published
+  Archieve
+}
+
+model Chapter {
+  id String @id @default(uuid())
+
+  title    String
+  position Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId  String
+
+  lessons Lesson[]
+  quiz    Quiz?
+}
+
+model Lesson {
+  id String @id @default(uuid())
+
+  title        String
+  description  String?
+  thumbnailKey String?
+  videoKey     String?
+  position     Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Chapter   Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  chapterId String
+
+  lessonProgress LessonProgress[]
+}
+
+model Enrollment {
+  id String @id @default(uuid())
+
+  amount      Int
+  status      EnrollmentStatus @default(Pending)
+  completed   Boolean          @default(false)
+  paymentLink String?
+
+  createAt DateTime @default(now())
+  updateAt DateTime @updatedAt
+  Course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId String
+  User     User     @relation(fields: [userId], references: [id])
+  userId   String
+
+  @@unique([userId, courseId])
+}
+
+enum EnrollmentStatus {
+  Pending
+  Active
+  Cancelled
+}
+
+model LessonProgress {
+  id String @id @default(uuid())
+
+  completed Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  User     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String
+  Lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lessonId String
+
+  @@unique([userId, lessonId])
+}
+
+model Certificate {
+  id       String   @id @default(uuid())
+  issuedAt DateTime @default(now())
+  userId   String
+  courseId String
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+}
+
+model RegisterInstructor {
+  id              String           @id @default(cuid())
+  name            String
+  email           String
+  profession      String
+  industry        String
+  linkedinAccount String
+  bio             String
+  numberKTP       String
+  ktpImageUrl     String
+  referralCode    String?
+  status          InstructorStatus @default(PENDING)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+enum InstructorStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Discussion {
+  id       String @id @default(cuid())
+  title    String
+  category String
+  content  String
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  replies   Reply[]
+  views     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Reply {
+  id           String     @id @default(cuid())
+  content      String
+  discussionId String
+  discussion   Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentId     String?
+  parent       Reply?     @relation("ReplyToReply", fields: [parentId], references: [id])
+  children     Reply[]    @relation("ReplyToReply")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Wallet {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String   @unique
+  balance   Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model WebhookLog {
+  id        String   @id @default(cuid())
+  event     String
+  payload   Json
+  createdAt DateTime @default(now())
+}
+
+model Rating {
+  id       String @id @default(cuid())
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId String
+
+  value  Int
+  review String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, courseId])
+}
+
+model PointTransaction {
+  id          String               @id @default(cuid())
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  amount      Int
+  type        PointTransactionType
+  description String
+  referenceId String?
+  createdAt   DateTime             @default(now())
+}
+
+enum PointTransactionType {
+  REFERRAL_BONUS // Bonus dari referral instruktur
+  COURSE_REDEMPTION // Penggunaan poin untuk beli kursus
+  ADMIN_ADJUSTMENT // Penyesuaian oleh admin
+  WELCOME_BONUS // Bonus selamat datang
+}
+
+model CourseReview {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId  String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+}
+
+model Withdraw {
+  id        String         @id @default(cuid())
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  amount    Int
+  status    WithdrawStatus @default(PENDING)
+  createdAt DateTime       @default(now())
+}
+
+enum WithdrawStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+// ==================== QUIZ SYSTEM ====================
+
+model Quiz {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  chapterId   String
+  chapter     Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  passingScore Int     @default(70) // Persentase minimum untuk lulus
+  timeLimit   Int?     // Waktu dalam menit, null = tidak terbatas
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  questions    QuizQuestion[]
+  attempts     QuizAttempt[]
+
+  @@unique([chapterId]) // Satu quiz per chapter
+}
+
+model QuizQuestion {
+  id          String   @id @default(cuid())
+  quizId      String
+  quiz        Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  question    String
+  options     Json     // Array of {id, text}
+  correctAnswer String // ID dari option yang benar
+  explanation String?  // Penjelasan jawaban
+  position    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model QuizAttempt {
+  id          String   @id @default(cuid())
+  quizId      String
+  quiz        Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score       Int      // Persentase skor
+  answers     Json     // {questionId: selectedAnswer}
+  passed      Boolean
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+
+  @@index([userId, quizId])
+}
+
+// ==================== ACHIEVEMENT BADGES ====================
+
+model Badge {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  icon        String   // Nama icon atau URL
+  category    BadgeCategory
+  requirement Json     // Kondisi untuk mendapatkan badge {type, value}
+  points      Int      @default(0) // Poin bonus saat mendapatkan badge
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  userBadges  UserBadge[]
+}
+
+enum BadgeCategory {
+  LEARNING    // Related to course completion
+  QUIZ        // Related to quiz performance
+  ENGAGEMENT  // Related to forum, reviews, etc.
+  STREAK      // Related to daily learning
+  MILESTONE   // Special achievements
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeId   String
+  badge     Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  earnedAt  DateTime @default(now())
+
+  @@unique([userId, badgeId])
+}
+
+// ==================== LEARNING STREAK ====================
+
+model LearningStreak {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentStreak Int      @default(0)
+  longestStreak Int      @default(0)
+  lastActivityDate DateTime?
+  updatedAt     DateTime @updatedAt
+}
