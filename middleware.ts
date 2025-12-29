@@ -96,9 +96,9 @@ export async function middleware(request: NextRequest) {
   const isAllowed = guestAllowedRoutes.some((route) => {
     return pathname === route || pathname.startsWith(route + "/");
   });
-  if (!isAllowed) {
-    return NextResponse.redirect(new URL("/coming-soon", request.url));
-  }
+  // if (!isAllowed) {
+  //   return NextResponse.redirect(new URL("/coming-soon", request.url));
+  // }
 
   return NextResponse.next();
 }
