@@ -93,9 +93,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const isAllowed = guestAllowedRoutes.some((route) => {
-    return pathname === route || pathname.startsWith(route + "/");
-  });
+  // const isAllowed = guestAllowedRoutes.some((route) => {
+  //   return pathname === route || pathname.startsWith(route + "/");
+  // });
   // if (!isAllowed) {
   //   return NextResponse.redirect(new URL("/coming-soon", request.url));
   // }

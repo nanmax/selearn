@@ -6,6 +6,7 @@ export async function getAllCourse() {
   const data = await prisma.course.findMany({
     where: {
       status: "Published",
+      approvalStatus: "Approved", // Hanya tampilkan course yang sudah approved HR
     },
     orderBy: {
       createdAt: "desc",

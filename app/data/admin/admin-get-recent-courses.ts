@@ -4,9 +4,12 @@ import { prisma } from "@/lib/db";
 import { requireAdmin } from "./require-admin";
 
 export async function adminGetRecentCourses() {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const data = await prisma.course.findMany({
+    where: {
+      userId: session.user.id, // Only show courses owned by this instructor
+    },
     orderBy: {
       createdAt: "desc",
     },
@@ -18,6 +21,7 @@ export async function adminGetRecentCourses() {
       duration: true,
       level: true,
       status: true,
+      approvalStatus: true,
       price: true,
       fileKey: true,
       slug: true,

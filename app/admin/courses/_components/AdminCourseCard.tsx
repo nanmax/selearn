@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { useConstructUrl } from "@/hooks/use-construct";
 import {
   ArrowRight,
@@ -22,6 +23,17 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 
+const statusColors = {
+  Draft: "bg-gray-100 text-gray-800",
+  Published: "bg-blue-100 text-blue-800",
+};
+
+const approvalColors = {
+  Waiting: "bg-yellow-100 text-yellow-800",
+  Approved: "bg-green-100 text-green-800",
+  Rejected: "bg-red-100 text-red-800",
+};
+
 interface iAppProps {
   data: AdminCourseType;
 }
@@ -30,6 +42,15 @@ export function AdminCourseCard({ data }: iAppProps) {
   const thumbnailUrl = useConstructUrl(data.fileKey || null);
   return (
     <Card className="group relative py-0 gap-0">
+      {/* Status Badges */}
+      <div className="absolute top-2 left-2 z-10 flex gap-1">
+        <Badge className={statusColors[data.status as keyof typeof statusColors]}>
+          {data.status}
+        </Badge>
+        <Badge className={approvalColors[data.approvalStatus as keyof typeof approvalColors]}>
+          {data.approvalStatus}
+        </Badge>
+      </div>
       <div className="absolute top-2 right-2 z-10">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

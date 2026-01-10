@@ -1,3 +1,5 @@
+All right reserved by Wheelbox and author Yopi Septian Gumelar (Founder & CEO of Wheelbox)
+
 ## 🚀 Selearn - Learning Management System (LMS) SaaS oleh Wheelbox Startup
 ### 👋 Selamat Datang di Repositori Selearn!
 
@@ -42,3 +44,11 @@ Kami sangat menyambut kontribusi Anda! Jika Anda tertarik untuk membantu mengemb
 
 ### 📄 Lisensi
 Proyek ini dilisensikan di bawah Lisensi MIT. Lihat file LICENSE untuk detail lebih lanjut.
+
+### 📧 Kontak
+Untuk pertanyaan, saran, atau kemitraan, jangan ragu untuk menghubungi tim Wheelbox Startup melalui:
+
+- Email: dev.wheelbox@gmail.com
+- Website: www.wheelbox.tech
+
+Terima kasih!

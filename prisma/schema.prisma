@@ -189,6 +189,12 @@ model Course {
 
   status CourseStatus @default(Draft)
 
+  // HR Approval System
+  approvalStatus ApprovalStatus @default(Waiting)
+  approvalNote   String?
+  approvedAt     DateTime?
+  reviewedBy     String? // Email HR yang mereview
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -213,6 +219,12 @@ enum CourseStatus {
   Draft
   Published
   Archieve
+}
+
+enum ApprovalStatus {
+  Waiting    // Menunggu review HR
+  Approved   // Disetujui HR
+  Rejected   // Ditolak HR
 }
 
 model Chapter {

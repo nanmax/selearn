@@ -1,23 +1,12 @@
 import { SiteHeader } from "@/components/sidebar/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebarSuperAdmin } from "./_components/app-sidebar";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { AppSidebarHR } from "./_components/app-sidebar";
 
-export default async function SuperAdminLayout({
+export default function HRLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session?.user || session.user.role !== "superadmin") {
-    redirect("/");
-  }
-
   return (
     <SidebarProvider
       style={
@@ -26,7 +15,7 @@ export default async function SuperAdminLayout({
           "--header-height": "calc(var(--spacing) * 12)",
         } as React.CSSProperties
       }>
-      <AppSidebarSuperAdmin variant="inset" />
+      <AppSidebarHR variant="inset" />
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">

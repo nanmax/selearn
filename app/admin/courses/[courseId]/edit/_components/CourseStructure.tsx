@@ -42,6 +42,16 @@ import { NewChapterModal } from "./NewChapterModal";
 import { NewLessonModal } from "./NewLessonsModal";
 import { DeleteLesson } from "./DeleteLesson";
 import { DeleteChapter } from "./DeleteChapter";
+import { QuizManageModal } from "./QuizManageModal";
+import { DeleteQuiz } from "./DeleteQuiz";
+import { Badge } from "@/components/ui/badge";
+import { ClipboardList, Users, HelpCircle } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface iAppProps {
   data: AdminCourseSingularType;
@@ -63,12 +73,22 @@ interface LessonItem {
   order: number;
 }
 
+interface QuizItem {
+  id: string;
+  title: string;
+  passingScore: number;
+  isActive: boolean;
+  questionCount: number;
+  attemptCount: number;
+}
+
 interface ChapterItem {
   id: string;
   title: string;
   order: number;
   isOpen: boolean;
   lessons: LessonItem[];
+  quiz: QuizItem | null;
 }
 
 
@@ -84,6 +104,16 @@ export function CourseStructure({ data }: iAppProps) {
         title: lesson.title,
         order: lesson.position,
       })),
+      quiz: chapter.quiz
+        ? {
+            id: chapter.quiz.id,
+            title: chapter.quiz.title,
+            passingScore: chapter.quiz.passingScore,
+            isActive: chapter.quiz.isActive,
+            questionCount: chapter.quiz._count.questions,
+            attemptCount: chapter.quiz._count.attempts,
+          }
+        : null,
     })) || [];
   const [items, setItems] = useState<ChapterItem[]>(initialItems);
 
@@ -101,6 +131,16 @@ export function CourseStructure({ data }: iAppProps) {
             title: lesson.title,
             order: lesson.position,
           })),
+          quiz: chapter.quiz
+            ? {
+                id: chapter.quiz.id,
+                title: chapter.quiz.title,
+                passingScore: chapter.quiz.passingScore,
+                isActive: chapter.quiz.isActive,
+                questionCount: chapter.quiz._count.questions,
+                attemptCount: chapter.quiz._count.attempts,
+              }
+            : null,
         })) || [];
 
       return updatedItems;
@@ -399,6 +439,55 @@ export function CourseStructure({ data }: iAppProps) {
                               chapterId={item.id}
                               courseId={data.id}
                             />
+                          </div>
+
+                          {/* Quiz Section */}
+                          <div className="p-3 mt-2 border-t border-border">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <ClipboardList className="size-4 text-primary" />
+                                <span className="text-sm font-medium">Quiz</span>
+                                {item.quiz && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Badge
+                                          variant="secondary"
+                                          className="gap-1 cursor-default text-xs"
+                                        >
+                                          <HelpCircle className="size-3" />
+                                          {item.quiz.questionCount}
+                                          <Users className="size-3 ml-1" />
+                                          {item.quiz.attemptCount}
+                                        </Badge>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <div className="space-y-1 text-xs">
+                                          <p className="font-medium">{item.quiz.title}</p>
+                                          <p>{item.quiz.questionCount} pertanyaan</p>
+                                          <p>{item.quiz.attemptCount} percobaan</p>
+                                          <p>Skor lulus: {item.quiz.passingScore}%</p>
+                                        </div>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <QuizManageModal
+                                  chapterId={item.id}
+                                  chapterTitle={item.title}
+                                  hasExistingQuiz={!!item.quiz}
+                                />
+                                {item.quiz && (
+                                  <DeleteQuiz
+                                    quizId={item.quiz.id}
+                                    quizTitle={item.quiz.title}
+                                    attemptCount={item.quiz.attemptCount}
+                                  />
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </CollapsibleContent>

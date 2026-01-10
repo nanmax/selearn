@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const courseLevels = ["Beginner", "Intermediate", "Advanced"] as const;
 export const courseStatus = ["Draft", "Published", "Archieve"] as const;
+export const approvalStatus = ["Waiting", "Approved", "Rejected"] as const;
 export const courseCategory = [
   "Development",
   "Business",
@@ -70,6 +71,14 @@ export const lessonSchema = z.object({
   videoKey: z.string().optional(),
 });
 
+export const approvalActionSchema = z.object({
+  courseId: z.string().uuid(),
+  action: z.enum(["approve", "reject"]),
+  note: z.string().optional(),
+  reviewedBy: z.string().email(),
+});
+
 export type CourseSchemaType = z.infer<typeof courseSchema>;
 export type ChapterSchemaType = z.infer<typeof chapterSchema>;
 export type LessonSchemaType = z.infer<typeof lessonSchema>;
+export type ApprovalActionSchemaType = z.infer<typeof approvalActionSchema>;

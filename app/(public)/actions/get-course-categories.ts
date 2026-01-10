@@ -8,6 +8,7 @@ export const getCourseCategories = async () => {
     const categories = await prisma.course.findMany({
       where: {
         status: "Published",
+        approvalStatus: "Approved",
       },
       select: {
         fileKey: true,
@@ -41,6 +42,7 @@ export const getCoursesByCategorySlug = async (slug: string) => {
     where: {
       category: currentCategory.category,
       status: "Published",
+      approvalStatus: "Approved",
     },
     include: {
       user: true,

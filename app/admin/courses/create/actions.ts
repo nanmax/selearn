@@ -8,6 +8,7 @@ import { courseSchema, CourseSchemaType } from "@/lib/zodSchema";
 import { request } from "@arcjet/next";
 import { XENDIT_BASE_URL, XENDIT_HEADERS } from "@/lib/xendit";
 import { env } from "@/lib/env";
+import { sendCourseSubmissionNotificationToHR } from "@/lib/email-helpers";
 
 const aj = arcjet.withRule(
   fixedWindow({
@@ -86,7 +87,7 @@ export async function CreateCourse(
 
     const invoiceData = await invoiceResponse.json();
 
-    await prisma.course.create({
+    const newCourse = await prisma.course.create({
       data: {
         ...data,
         price: amount,
@@ -95,9 +96,22 @@ export async function CreateCourse(
       },
     });
 
+    // Send notification to HR for course approval
+    await sendCourseSubmissionNotificationToHR({
+      title: data.title,
+      description: data.description,
+      instructorName: session.user.name || "Unknown",
+      instructorEmail: session.user.email || "",
+      category: data.category,
+      level: data.level,
+      price: amount,
+      courseId: newCourse.id,
+      slug: data.slug,
+    });
+
     return {
       status: "success",
-      message: "Course created successfully and linked with Xendit!",
+      message: "Course created successfully and linked with Xendit! HR akan mereview course Anda.",
     };
   } catch (err) {
     console.error("Error creating course:", err);

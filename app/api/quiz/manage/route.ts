@@ -3,6 +3,79 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 
+// GET: Get quiz data for editing (for instructors)
+export async function GET(req: Request) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const chapterId = searchParams.get("chapterId");
+    const quizId = searchParams.get("quizId");
+
+    if (!chapterId && !quizId) {
+      return NextResponse.json(
+        { error: "chapterId or quizId is required" },
+        { status: 400 }
+      );
+    }
+
+    const quiz = await prisma.quiz.findFirst({
+      where: quizId ? { id: quizId } : { chapterId: chapterId! },
+      include: {
+        questions: {
+          orderBy: { position: "asc" },
+        },
+        chapter: {
+          include: {
+            Course: {
+              select: { userId: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!quiz) {
+      return NextResponse.json({ error: "Quiz not found" }, { status: 404 });
+    }
+
+    // Verify ownership
+    if (quiz.chapter.Course.userId !== session.user.id) {
+      return NextResponse.json(
+        { error: "You don't have permission to view this quiz" },
+        { status: 403 }
+      );
+    }
+
+    return NextResponse.json({
+      quiz: {
+        id: quiz.id,
+        title: quiz.title,
+        description: quiz.description,
+        passingScore: quiz.passingScore,
+        timeLimit: quiz.timeLimit,
+        questions: quiz.questions.map((q) => ({
+          id: q.id,
+          question: q.question,
+          options: q.options,
+          correctAnswer: q.correctAnswer,
+          explanation: q.explanation,
+          position: q.position,
+        })),
+      },
+    });
+  } catch (error) {
+    console.error("Quiz GET Manage Error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
 // POST: Create/Update quiz (for instructors)
 export async function POST(req: Request) {
   try {

@@ -5,11 +5,16 @@ import { requireAdmin } from "./require-admin";
 import { notFound } from "next/navigation";
 
 export async function adminGetLesson(id: string) {
-  await requireAdmin();
+  const session = await requireAdmin();
 
-  const data = await prisma.lesson.findUnique({
+  const data = await prisma.lesson.findFirst({
     where: {
       id: id,
+      Chapter: {
+        Course: {
+          userId: session.user.id, // Only allow owner to access
+        },
+      },
     },
     select: {
       title: true,

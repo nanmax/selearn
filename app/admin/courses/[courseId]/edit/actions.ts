@@ -59,6 +59,32 @@ export async function editCourse(
       };
     }
 
+    // Get current course status
+    const currentCourse = await prisma.course.findUnique({
+      where: { id: courseId, userId: user.user.id },
+      select: { status: true, approvalStatus: true },
+    });
+
+    if (!currentCourse) {
+      return {
+        status: "error",
+        message: "Course not found",
+      };
+    }
+
+    // Check if trying to publish without approval
+    if (result.data.status === "Published") {
+      if (currentCourse.approvalStatus !== "Approved") {
+        return {
+          status: "error",
+          message: "Course harus disetujui HR sebelum bisa di-publish. Status saat ini: " + currentCourse.approvalStatus,
+        };
+      }
+    }
+
+    // If course is currently Published and being edited, reset to Draft and require re-approval
+    const needsReApproval = currentCourse.status === "Published" && result.data.status !== "Published";
+
     await prisma.course.update({
       where: {
         id: courseId,
@@ -66,6 +92,10 @@ export async function editCourse(
       },
       data: {
         ...result.data,
+        // Reset approval status if course was Published and now being edited (changed to Draft)
+        ...(needsReApproval && {
+          approvalStatus: "Waiting",
+        }),
       },
     });
 

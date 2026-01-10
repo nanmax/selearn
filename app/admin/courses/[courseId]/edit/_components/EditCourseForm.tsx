@@ -12,7 +12,8 @@ import {
   courseStatus,
 } from "@/lib/zodSchema";
 import { Button } from "@/components/ui/button";
-import { Loader2Icon, PlusIcon, SparkleIcon } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Loader2Icon, PlusIcon, SparkleIcon, AlertCircle } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -261,30 +262,68 @@ export function EditCourseForm({ data }: iAppProps) {
           />
         </div>
 
-        <FormField
-          control={form.control}
-          name="status"
-          render={({ field }) => (
-            <FormItem className="w-full">
-              <FormLabel>Status</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select Status" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {courseStatus.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {status}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">Status Persetujuan HR:</span>
+            <Badge
+              className={
+                data.approvalStatus === "Approved"
+                  ? "bg-green-100 text-green-800"
+                  : data.approvalStatus === "Rejected"
+                  ? "bg-red-100 text-red-800"
+                  : "bg-yellow-100 text-yellow-800"
+              }>
+              {data.approvalStatus}
+            </Badge>
+          </div>
+
+          {data.approvalStatus !== "Approved" && (
+            <div className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+              <AlertCircle className="size-5 text-yellow-600 mt-0.5 shrink-0" />
+              <p className="text-sm text-yellow-800">
+                Course harus disetujui oleh HR sebelum bisa di-publish. Status saat ini: <strong>{data.approvalStatus}</strong>
+              </p>
+            </div>
           )}
-        />
+
+          {data.status === "Published" && (
+            <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <AlertCircle className="size-5 text-blue-600 mt-0.5 shrink-0" />
+              <p className="text-sm text-blue-800">
+                Course ini sudah <strong>Published</strong>. Jika mengubah status ke Draft, approval status akan di-reset ke Waiting dan memerlukan persetujuan HR lagi.
+              </p>
+            </div>
+          )}
+
+          <FormField
+            control={form.control}
+            name="status"
+            render={({ field }) => (
+              <FormItem className="w-full">
+                <FormLabel>Status Publikasi</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select Status" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {courseStatus.map((status) => (
+                      <SelectItem
+                        key={status}
+                        value={status}
+                        disabled={status === "Published" && data.approvalStatus !== "Approved"}>
+                        {status}
+                        {status === "Published" && data.approvalStatus !== "Approved" && " (Perlu persetujuan HR)"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <Button type="submit" disabled={pending}>
           {pending ? (
